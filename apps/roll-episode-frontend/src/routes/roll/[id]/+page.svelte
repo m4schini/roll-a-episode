@@ -76,7 +76,12 @@ loading...
 
         .episode div {
             margin-top: 32px;
-            margin-left: 32px;
+            margin-left: 48px;
+        }
+
+        .show {
+            justify-content: left;
+            align-items: center;
         }
     }
 
