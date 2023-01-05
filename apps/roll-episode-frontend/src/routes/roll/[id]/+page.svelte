@@ -84,6 +84,11 @@ loading...
             justify-content: center;
             align-items: center;
         }
+
+        .show {
+            width: 450px;
+            padding: 16px;
+        }
     }
 
    :global(body) {
