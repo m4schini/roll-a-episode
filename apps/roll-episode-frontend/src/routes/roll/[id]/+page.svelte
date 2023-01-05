@@ -44,9 +44,11 @@
 </div>
 <div class="episode">
     <img src={API_URL + "/img?href=" + episode.image} />
-    <h1>{episode.name}</h1>
-    <h2>Season: {episode.seasonNumber}</h2>
-    <h2>Episode: {episode.number}</h2>
+    <div>
+        <h1>{episode.name}</h1>
+        <h2>Season: {episode.seasonNumber}</h2>
+        <h2>Episode: {episode.number}</h2>
+    </div>
 </div>
 </main>
 
