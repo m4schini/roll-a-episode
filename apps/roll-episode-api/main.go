@@ -33,6 +33,7 @@ func main() {
 			log.Info("CACHED: " + href)
 			w.Header().Set("Content-Type", "image/jpeg")
 			w.Header().Set("Cache-Control", "max-age=604800")
+			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Write(cached)
 			w.WriteHeader(http.StatusOK)
 			return
@@ -55,6 +56,7 @@ func main() {
 
 		w.Header().Set("Content-Type", "image/jpeg")
 		w.Header().Set("Cache-Control", "max-age=604800")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Write(buf)
 		w.WriteHeader(http.StatusOK)
 	})
@@ -79,6 +81,7 @@ func main() {
 
 		w.Header().Set("Cache-Control", "max-age=604800")
 		w.Header().Set("content-type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Write(marshal)
 		w.WriteHeader(http.StatusOK)
 	})
@@ -91,6 +94,7 @@ func main() {
 		if isCached {
 			log.Info("CACHED: " + query)
 			w.Header().Set("content-type", "application/json")
+			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Write(cached)
 			w.WriteHeader(http.StatusOK)
 			return
@@ -124,6 +128,7 @@ func main() {
 		log.Info("CACHING: " + query)
 		w.Header().Set("Cache-Control", "max-age=604800")
 		w.Header().Set("content-type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Write(b)
 		w.WriteHeader(http.StatusOK)
 	})
@@ -150,6 +155,7 @@ func main() {
 		}
 
 		w.Header().Set("content-type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Write(out)
 		w.WriteHeader(http.StatusOK)
 	})
