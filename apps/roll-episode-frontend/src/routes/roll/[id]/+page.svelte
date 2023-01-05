@@ -64,6 +64,12 @@ loading...
 
 
 <style>
+    @media screen and (min-width: 1100px) {
+        .episode {
+            display: flex;
+        }
+    }
+
    :global(body) {
 		margin: 0;
 	}
