@@ -43,7 +43,9 @@
     </div>
 </div>
 <div class="episode">
+    {#if episode.image}
     <img src={API_URL + "/img?href=" + episode.image} />
+    {/if}
     <div>
         <h1>{episode.name}</h1>
         <h2>Season: {episode.seasonNumber}</h2>
