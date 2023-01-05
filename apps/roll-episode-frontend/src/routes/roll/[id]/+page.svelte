@@ -31,7 +31,7 @@
 
 </script>
 
-{#if loaded}
+{#if loaded && episode.seasonNumber}
 <main>
 <div class="show">
     <img src={API_URL + "/img?href=" + show.image} alt={"show poster"} />
