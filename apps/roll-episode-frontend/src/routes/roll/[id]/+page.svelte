@@ -79,8 +79,8 @@ loading...
             margin-left: 48px;
         }
 
-        .show {
-            justify-content: left;
+        main {
+            justify-content: center;
             align-items: center;
         }
     }
