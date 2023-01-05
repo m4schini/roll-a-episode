@@ -1,5 +1,5 @@
 <script>
-  const API_URL = 'http://localhost:8080';
+  const API_URL = 'http://141.95.104.175:8080';
 
   export let episode = {};
   export let episodeL = false;
@@ -36,14 +36,14 @@
 {#if loaded}
 <main>
 <div class="show">
-    <img src={"http://localhost:8080/img?href=" + show.image} alt={"show poster"} />
+    <img src={API_URL + "/img?href=" + show.image} alt={"show poster"} />
     <div>
         <h1>{show.name}</h1>
         <button class="roll-btn" on:click={() => location.reload()}>Random Episode</button>
     </div>
 </div>
 <div class="episode">
-    <img src={"http://localhost:8080/img?href=" + episode.image} />
+    <img src={API_URL + "/img?href=" + episode.image} />
     <h1>{episode.name}</h1>
     <h2>Season: {episode.seasonNumber}</h2>
     <h2>Episode: {episode.number}</h2>

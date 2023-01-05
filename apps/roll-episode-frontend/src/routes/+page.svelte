@@ -1,7 +1,7 @@
 <script>
     import ShowCard from '../components/ShowCard.svelte';
 
-    const API_URL = 'http://localhost:8080/search?q=';
+    const API_URL = 'http://141.95.104.175:8080/search?q=';
     let name = '';
     let shows = [];
 
