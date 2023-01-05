@@ -56,7 +56,8 @@
 
 <main class="loading">
 <div>
-loading...
+loading... <br />
+If this takes longer then a few seconds, reload the page
 </div>
 </main>
 
