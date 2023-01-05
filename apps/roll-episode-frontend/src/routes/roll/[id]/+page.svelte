@@ -12,7 +12,6 @@
   import { page } from '$app/stores';
   console.log($page.params)
 
-  export let seasons = [];
 
   fetch(API_URL + "/roll?id=" + $page.params.id)
   .then(r => r.json())
@@ -26,7 +25,6 @@
   .then(r => r.json())
   .then(r => {
     show = r
-    seasons = r.seasons
     //console.log(show)
     showL = true;
   })
