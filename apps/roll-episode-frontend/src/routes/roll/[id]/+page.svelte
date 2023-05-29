@@ -1,5 +1,5 @@
 <script>
-  const API_URL = 'http://141.95.104.175:8080';
+  const API_URL = 'http://localhost:8080';
 
   export let episode = {};
   export let episodeL = false;
