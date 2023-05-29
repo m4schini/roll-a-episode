@@ -14,7 +14,7 @@
     </div>
 
     {#if value.image_url}
-        <img src={"http://localhost:8080/img?href=" + value?.image_url} alt="{value.name} dancing">
+        <img src={value?.image_url} alt="{value.name} dancing">
     {/if}
 </article>
 

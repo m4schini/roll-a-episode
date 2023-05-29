@@ -2,16 +2,24 @@ package tvdb
 
 import (
 	"context"
+	"encoding/base64"
+	"errors"
 	"github.com/antihax/optional"
-	"log"
+	"github.com/m4schini/logger"
 	"net/http"
 	"os"
+	"roll-episode/s3"
 	"roll-episode/tvdb/auth"
 	"roll-episode/tvdb/swagger"
 	"strconv"
+	"sync"
 )
 
+var log = logger.Named("tvdb").Sugar()
+
 var tvdb *swagger.APIClient
+
+var s3Bucket *s3.MinioBucket
 
 func init() {
 	apikey := os.Getenv("TVDB_APIKEY")
@@ -24,7 +32,18 @@ func init() {
 		log.Fatal("TVDB_PIN is missing")
 	}
 
-	var err error
+	bucketName := os.Getenv("BUCKET_NAME")
+	endpoint := os.Getenv("BUCKET_ENDPOINT")
+	accessKey := os.Getenv("BUCKET_ACCESS_KEY")
+	accessSecret := os.Getenv("BUCKET_ACCESS_SECRET")
+
+	bucket, err := s3.NewMinioBucket(context.TODO(), bucketName, endpoint, accessKey, accessSecret, true)
+	if err != nil {
+		log.Error(err)
+	} else {
+		s3Bucket = bucket
+	}
+
 	cfg := swagger.NewConfiguration()
 	cfg.HTTPClient = http.DefaultClient
 	cfg.HTTPClient.Transport, err = auth.NewAuth(
@@ -71,11 +90,33 @@ func FindShow(ctx context.Context, query string) ([]swagger.SearchResult, error)
 		Q: optional.NewString(query),
 	})
 
+	var wg sync.WaitGroup
+	l := len(results.Data)
+	wg.Add(l)
+	newImageUrls := make([]string, l)
+	for i, result := range results.Data {
+		i := i
+		url := result.ImageUrl
+		go func() {
+			newUrl, _ := UseS3(ctx, url)
+			newImageUrls[i] = newUrl
+			wg.Done()
+			log.Debugw("Tried to use s3 instead of tvdb", "old", url, "new", newUrl)
+		}()
+	}
+	wg.Wait()
+
+	for i, _ := range results.Data {
+		results.Data[i].ImageUrl = newImageUrls[i]
+	}
+
 	return results.Data, err
 }
 
 func GetShow(ctx context.Context, id string) (*swagger.SeriesExtendedRecord, error) {
 	seriesBase, _, err := tvdb.SeriesApi.GetSeriesExtended(ctx, toFloat(id), nil)
+
+	seriesBase.Data.Image, err = UseS3(ctx, seriesBase.Data.Image)
 	return seriesBase.Data, err
 }
 
@@ -85,4 +126,35 @@ func toFloat(idStr string) float64 {
 		return 0
 	}
 	return float64(n)
+}
+
+func UseS3(ctx context.Context, orignalUrl string) (string, error) {
+	if s3Bucket == nil {
+		return orignalUrl, errors.New("not initialized")
+	}
+	urlB64 := base64.StdEncoding.EncodeToString([]byte(orignalUrl))
+	s3Url := s3Bucket.URL(urlB64)
+	resp, err := http.Head(s3Url)
+	if err == nil && resp.StatusCode == http.StatusOK {
+		return s3Url, nil
+	}
+
+	resp, err = http.Get(orignalUrl)
+	if err != nil {
+		return orignalUrl, err
+	}
+
+	contentLengthStr := resp.Header.Get("Content-Length")
+	contentLength, err := strconv.ParseInt(contentLengthStr, 10, 64)
+	if err != nil {
+		return orignalUrl, err
+	}
+
+	err = s3Bucket.Put(ctx, urlB64, "image/jpeg", contentLength, resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		return orignalUrl, err
+	}
+
+	return s3Url, nil
 }

@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"fmt"
 	"github.com/m4schini/logger"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -14,6 +15,11 @@ var log = logger.Named("s3").Sugar()
 type MinioBucket struct {
 	client     *minio.Client
 	bucketName string
+	baseUrl    string
+}
+
+func (m *MinioBucket) URL(filename string) string {
+	return fmt.Sprintf("%v/%v", m.baseUrl, filename)
 }
 
 func (m *MinioBucket) Put(ctx context.Context, name, contentType string, size int64, objectReader io.Reader) error {
@@ -38,6 +44,13 @@ func NewMinioBucket(ctx context.Context, bucketName, endpoint, accessKey, access
 	}
 
 	minioBucket := &MinioBucket{client: minioClient, bucketName: bucketName}
+	var scheme string
+	if useSSL {
+		scheme = "https"
+	} else {
+		scheme = "http"
+	}
+	minioBucket.baseUrl = fmt.Sprintf("%v://%v/%v", scheme, endpoint, bucketName)
 
 	exists, err := minioClient.BucketExists(ctx, bucketName)
 	if err != nil {

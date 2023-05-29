@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/m4schini/logger"
@@ -11,19 +12,14 @@ import (
 	"math"
 	"net/http"
 	"os"
-	"roll-episode/cache"
 	"roll-episode/s3"
 	"roll-episode/tvdb"
 	"roll-episode/tvdb/swagger"
 	"strconv"
-	"sync"
 	"time"
 )
 
 var log = logger.Named("main").Sugar()
-
-var imgCache cache.Map
-var imgCacheMu sync.Mutex
 
 func main() {
 	bucketName := os.Getenv("BUCKET_NAME")
@@ -124,18 +120,33 @@ func main() {
 		log := log.With("path", "/roll", "sender", c.Request.RemoteAddr)
 		defer log.Info("completed request")
 		id := c.Query("id")
+		c.Header("Access-Control-Allow-Origin", "*")
 
-		seasons, records := tvdb.GetSeasons(c, id)
-		season, episode := Roll(seasons...)
 		var rolledEpisode *swagger.EpisodeBaseRecord
-		for _, record := range records {
-			if int(record.SeasonNumber) == season && int(record.Number) == episode {
-				rolledEpisode = &record
-				break
+		var i = 0
+		for rolledEpisode == nil {
+			seasons, records := tvdb.GetSeasons(c, id)
+			season, episode := Roll(seasons...)
+			for _, record := range records {
+				if int(record.SeasonNumber) == season && int(record.Number) == episode {
+					rolledEpisode = &record
+					break
+				}
 			}
+			log.Debug("Roll attempt ", i)
+			i += 1
 		}
 
-		c.Header("Access-Control-Allow-Origin", "*")
+		if rolledEpisode == nil {
+			c.JSON(http.StatusNotFound, struct{}{})
+			return
+		}
+		rolledEpisode.Image, _ = tvdb.UseS3(c, rolledEpisode.Image)
+
+		j, err := json.Marshal(rolledEpisode)
+		if err == nil {
+			log.Info("rolled ", string(j))
+		}
 		c.JSON(http.StatusOK, rolledEpisode)
 	})
 	log.Fatal(r.Run("0.0.0.0:" + os.Getenv("PORT")))
@@ -145,17 +156,15 @@ func GinLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Start timer
 		start := time.Now()
-		path := c.Request.URL.String()
 
 		// Process request
 		c.Next()
 
-		log.Infof(`[%v] %v "%v" | %v | %v (%v)`,
-			c.Writer.Status(),
-			c.Request.Method,
-			path,
-			time.Since(start), //TODO prometheus timer
-			c.Request.RemoteAddr,
-			c.GetHeader("Content-Type"))
+		// log request
+		log.Infow(fmt.Sprintf(`Handeled request %v '%v'`, c.Request.Method, c.Request.URL.String()),
+			"status", c.Writer.Status(),
+			"duration", time.Since(start).String(),
+			"client", c.Request.RemoteAddr,
+			"contentType", c.GetHeader("Content-Type"))
 	}
 }

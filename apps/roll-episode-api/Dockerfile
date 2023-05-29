@@ -10,7 +10,7 @@ RUN go mod tidy
 
 RUN go build -o tv .
 
-FROM scratch as prod
+FROM docker.io/library/golang:1.20 as prod
 
 COPY --from=build /build/tv /tv
 
