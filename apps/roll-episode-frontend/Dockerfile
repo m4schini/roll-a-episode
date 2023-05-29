@@ -1,23 +1,36 @@
-FROM node:14.15.0 as build
+# Build the first stage with alpine node image and name as build
+FROM node:18-alpine3.17 as build
 
-# install dependencies
+# update and install the latest dependencies on docker base image
+# Add non root user to the docker image and set the user
+RUN apk update && apk upgrade
+# set work dir as app
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
 
-# Copy all local files into the image.
-COPY . .
+# copy the sveltkit project content with proper permission for the user svelteuser
+COPY . /app
 
-RUN npm run build
+# install all the project npm dependencies and 
+# build the svelte project to generate the artifacts in build directory
+RUN npm install && npm run build
 
-###
-# Only copy over the Node pieces we need
-# ~> Saves 35MB
-###
-FROM node:14.15.0
-
+# we are using multi stage build process to keep the image size as small as possible
+FROM node:18-alpine3.17
+# update and install latest dependencies, add dumb-init package
+# add and set non root user
+RUN apk update && apk upgrade && apk add dumb-init
+# set work dir as app
 WORKDIR /app
-COPY --from=build /app/package.json /app/build ./
-EXPOSE 3000
 
-CMD ["node", "index.js"]
+# copy the build directory to the /app directory of second stage 
+COPY --from=build /app/build /app/package.json ./
+
+# expose 8080 on container
+EXPOSE 8080
+
+# set app host and port and env as production
+ENV HOST=0.0.0.0 PORT=8080 NODE_ENV=production
+
+# start the app with dumb init to spawn the Node.js runtime process
+# with signal support
+CMD ["dumb-init","node","index.js"]
